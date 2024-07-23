@@ -1,0 +1,40 @@
+<odoo>
+  <data>
+    <record model="ir.ui.view" id="view_partner_form">
+      <field name="name">res.partner.form</field>
+      <field name="model">res.partner</field>
+      <field name="inherit_id" ref="base.view_partner_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//sheet" position="inside">
+          <field name="partner_identity_verification" invisible="1"/>
+          <field name="partner_email_verification_link_sent" invisible="1"/>
+          <field name="partner_email_verification_token" invisible="1"/>
+          <field name="partner_email_verification_url" invisible="1"/>
+        </xpath>
+        <xpath expr="//sheet" position="before">
+          <div invisible="not email">
+            <div class="alert alert-warning oe_edit_only" role="alert" name="warning_email" invisible="email and partner_identity_verification">
+              <div invisible="partner_email_verification_link_sent">
+                <strong>Partners email address is not verified! Send verification email: </strong>
+                <button name="send_partner_verification_email"
+                        type="object"
+                        string="Send Verification Email"
+                        class="btn btn-link p-0"/>
+              </div>
+              <div invisible="not partner_email_verification_link_sent">
+                <strong>Partners email address verification link is sent. You can resend it using: </strong>
+                <button name="send_partner_verification_email"
+                        type="object"
+                        string="Resend Verification Email"
+                        class="btn btn-link p-0"/>
+              </div>
+            </div>
+          </div>
+          <div class="alert alert-success text-center o_form_header alert-dismissible" invisible="not partner_identity_verification" role="status">
+            Partners email address is verified!
+          </div>
+        </xpath>
+      </field>
+    </record>
+  </data>
+</odoo>

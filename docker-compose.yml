@@ -1,0 +1,105 @@
+services:
+  db:
+    image: postgres:16.3-alpine3.20
+    restart: unless-stopped
+    command: >
+      -c max_wal_size=4GB
+    env_file:
+      .env
+    ports:
+      - 5433:5432
+    networks:
+      - wg_easy_network
+    volumes:
+      - /opt/nvme_disk/docker_data/code_server/code_projects_data/odoo17_db_data:/var/lib/postgresql/data/
+
+  odoo:
+    image: odoo-dev:17
+    restart: unless-stopped
+    env_file:
+      .env
+    ports:
+      - 5678:5678
+      - 8070:8070
+      - 8071:8071
+      - 8072:8072
+      # - 8069:8069
+    # command: >
+    #   /bin/sh -c "
+    #     python /opt/odoo/odoo-bin scaffold email_verification /opt/odoo/customaddons/$CUSTOMADDONS_DIR
+    #   "
+    volumes:
+      - /opt/nvme_disk/docker_data/code_server/code_projects/odoo17/:/opt/odoo/
+      - /opt/nvme_disk/docker_data/code_server/code_projects/odoo17/customaddons/${CUSTOMADDONS_DIR}/odoo.conf:/etc/odoo.conf
+      - /opt/nvme_disk/docker_data/code_server/code_projects_data/odoo17_odoo_filestore:/root/.local/share/Odoo/
+    depends_on:
+      - db
+    networks:
+      - wg_easy_network
+    labels:
+      - logging=promtail
+      - logging_jobname=containerlogs
+
+      - traefik.enable=true
+      #----------------------------------------------- routers for: odoo --------------------------------------------------
+      # https
+      - traefik.http.routers.odoo-https.rule=Host(`odoo.archmate.duckdns.org`)
+      - traefik.http.routers.odoo-https.entrypoints=websecure
+      - traefik.http.routers.odoo-https.service=odoo
+      - traefik.http.routers.odoo-https.tls.certresolver=le
+      - traefik.http.routers.odoo-https.middlewares=gzip,sslheader,limit
+      #----------------------------- routes for: odoo/web/database || odoo/website/info  -----------------------------------
+      # https 
+      - traefik.http.routers.odoo-db-https.rule=Host(`odoo.archmate.duckdns.org`) && (PathPrefix(`/web/database`) || PathPrefix(`/website/info`))
+      - traefik.http.routers.odoo-db-https.entrypoints=websecure
+      - traefik.http.routers.odoo-db-https.service=odoo
+      - traefik.http.routers.odoo-db-https.tls.certresolver=le
+      - traefik.http.routers.odoo-db-https.middlewares=gzip,sslheader,limit
+      - traefik.http.services.odoo-db-https.loadbalancer.server.port=8069
+      #---------------------------------------- routes for: odoo/longpolling ------------------------------------------------
+      # https 
+      - traefik.http.routers.odoo-im-https.rule=Host(`odoo.archmate.duckdns.org`) && (PathPrefix(`/longpolling`))
+      - traefik.http.routers.odoo-im-https.entrypoints=websecure
+      - traefik.http.routers.odoo-im-https.service=odoo-im
+      - traefik.http.routers.odoo-im-https.tls.certresolver=le
+      - traefik.http.routers.odoo-im-https.middlewares=gzip,sslheader,limit
+      
+      #====================================================== services ===========================================================
+      - traefik.http.services.odoo.loadbalancer.server.port=8069
+      - traefik.http.services.odoo-im.loadbalancer.server.port=8072
+
+      #===================================================== middlewares =========================================================
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https
+      - traefik.http.middlewares.limit.buffering.memRequestBodyBytes=20971520
+      - traefik.http.middlewares.limit.buffering.maxRequestBodyBytes=20971520
+
+  # nginx:
+  #   image: nginx:1.27.0-alpine3.19-slim
+  #   restart: unless-stopped
+  #   env_file:
+  #     .env
+  #   ports:
+  #     - 80:80
+  #   volumes:
+  #     - /opt/nvme_disk/docker_data/code_server/code_projects/odoo17/customaddons/${CUSTOMADDONS_DIR}/nginx.conf:/etc/nginx/conf.d/default.conf
+  #   depends_on:
+  #     - odoo
+
+  # swagger:
+  #   image: swaggerapi/swagger-ui:v5.13.0
+  #   env_file:
+  #     .env
+  #   ports:
+  #     - 8080:8080
+  #   depends_on:
+  #     - nginx
+  #   #volumes:
+  #   #   - ./doc:/usr/share/nginx/html/doc
+  #   environment:
+  #     API_URL: ${API_URL}
+
+networks:
+  wg_easy_network:
+    external: true
+    name: wg_easy_network
