@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16.4-alpine3.20
+    image: postgres:17.2-alpine3.21
     restart: unless-stopped
     command: >
       -c max_wal_size=4GB
@@ -27,8 +27,8 @@ services:
     #     python /opt/odoo/odoo-bin scaffold email_verification /opt/odoo/customaddons/$CUSTOMADDONS_DIR
     #   "
     volumes:
-      - /opt/nvme_disk/docker_data/code_server/code_projects/odoo17/:/opt/odoo/
-      - /opt/nvme_disk/docker_data/code_server/code_projects/odoo17/customaddons/${CUSTOMADDONS_DIR}/odoo.conf:/etc/odoo.conf
+      - /opt/nvme_disk/docker_data/code_server/config/workspace/odoo17/:/opt/odoo/
+      - /opt/nvme_disk/docker_data/code_server/config/workspace/odoo17/customaddons/${CUSTOMADDONS_DIR}/odoo.conf:/etc/odoo.conf
       - /opt/nvme_disk/docker_data/code_server/code_projects_data/odoo17_odoo_filestore:/root/.local/share/Odoo/
     depends_on:
       - db
@@ -71,19 +71,19 @@ services:
       - traefik.http.middlewares.limit.buffering.maxRequestBodyBytes=20971520
 
   # nginx:
-  #   image: nginx:1.27.0-alpine3.19-slim
+  #   image: nginx:1.27.3-alpine3.20-slim
   #   restart: unless-stopped
   #   env_file:
   #     .env
   #   ports:
   #     - 80:80
   #   volumes:
-  #     - /opt/nvme_disk/docker_data/code_server/code_projects/odoo17/customaddons/${CUSTOMADDONS_DIR}/nginx.conf:/etc/nginx/conf.d/default.conf
+  #     - /opt/nvme_disk/docker_data/code_server/config/workspace/odoo17/customaddons/${CUSTOMADDONS_DIR}/nginx.conf:/etc/nginx/conf.d/default.conf
   #   depends_on:
   #     - odoo
 
   # swagger:
-  #   image: swaggerapi/swagger-ui:v5.13.0
+  #   image: swaggerapi/swagger-ui:v5.18.2
   #   env_file:
   #     .env
   #   ports:
